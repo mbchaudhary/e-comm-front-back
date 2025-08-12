@@ -13,7 +13,7 @@ router.post('/', optionalAuth, validate(wishlistSchema), withDatabaseMiddleware(
 router.get('/all', optionalAuth, withDatabaseMiddleware(wishlistController.getAllWishlists));
 
 // Get user's wishlist
-router.get('/', optionalAuth, withDatabaseMiddleware(wishlistController.getWishlistByUser));
+router.get('/user/:id', optionalAuth, withDatabaseMiddleware(wishlistController.getWishlistByUser));
 
 // Get specific wishlist item
 router.get('/:id', optionalAuth, withDatabaseMiddleware(wishlistController.getWishlistById));

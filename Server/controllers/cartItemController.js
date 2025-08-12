@@ -74,7 +74,7 @@ exports.createCartItem = async (req, res) => {
 
       // Update existing item quantity
       result = await req.db.query(
-        'UPDATE cart_items SET quantity = $1 WHERE cart_id = $2 AND product_id = $3 RETURNING *',
+        'UPDATE cart_items SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE cart_id = $2 AND product_id = $3 RETURNING *',
         [newQuantity, cartId, product_id]
       );
     } else {
@@ -87,7 +87,7 @@ exports.createCartItem = async (req, res) => {
 
     // Get cart item with product details
     const item = await req.db.query(
-      `SELECT ci.*, p.name, p.price, p.images, p.stock_quantity
+      `SELECT ci.*, p.name, p.price, p.images, p.stock_quantity, p.brand
        FROM cart_items ci 
        JOIN products p ON ci.product_id = p.id 
        WHERE ci.id = $1`,
@@ -96,7 +96,7 @@ exports.createCartItem = async (req, res) => {
 
     res.status(201).json(item.rows[0]);
   } catch (err) {
-    logger.error(err.message);
+    logger.error('Create cart item error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -134,7 +134,7 @@ exports.getCartItems = async (req, res) => {
 
     res.json(rows);
   } catch (err) {
-    logger.error(err.message);
+    logger.error('Get cart items error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -151,7 +151,7 @@ exports.getAllCartItems = async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    logger.error(err.message);
+    logger.error('Get all cart items error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -160,7 +160,7 @@ exports.getCartItemById = async (req, res) => {
   const { id } = req.params;
   try {
     const { rows } = await req.db.query(
-      `SELECT ci.*, p.name, p.price, p.images, p.stock_quantity
+      `SELECT ci.*, p.name, p.price, p.images, p.stock_quantity, p.brand
        FROM cart_items ci 
        JOIN products p ON ci.product_id = p.id 
        WHERE ci.id = $1`,
@@ -187,7 +187,7 @@ exports.getCartItemById = async (req, res) => {
 
     res.json(rows[0]);
   } catch (err) {
-    logger.error(err.message);
+    logger.error('Get cart item by id error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -231,13 +231,13 @@ exports.updateCartItem = async (req, res) => {
 
     // Update quantity
     await req.db.query(
-      'UPDATE cart_items SET quantity = $1 WHERE id = $2',
+      'UPDATE cart_items SET quantity = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       [quantity, id]
     );
 
     // Get updated item with product details
     const updatedItem = await req.db.query(
-      `SELECT ci.*, p.name, p.price, p.images, p.stock_quantity
+      `SELECT ci.*, p.name, p.price, p.images, p.stock_quantity, p.brand
        FROM cart_items ci 
        JOIN products p ON ci.product_id = p.id 
        WHERE ci.id = $1`,
@@ -246,7 +246,7 @@ exports.updateCartItem = async (req, res) => {
 
     res.json(updatedItem.rows[0]);
   } catch (err) {
-    logger.error(err.message);
+    logger.error('Update cart item error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -276,7 +276,7 @@ exports.deleteCartItem = async (req, res) => {
     await req.db.query('DELETE FROM cart_items WHERE id = $1', [id]);
     res.json({ message: 'Cart item deleted successfully' });
   } catch (err) {
-    logger.error(err.message);
+    logger.error('Delete cart item error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -307,7 +307,7 @@ exports.clearCart = async (req, res) => {
     
     res.json({ message: 'Cart cleared successfully' });
   } catch (err) {
-    logger.error(err.message);
+    logger.error('Clear cart error:', err.message);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

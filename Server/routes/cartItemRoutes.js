@@ -8,8 +8,10 @@ const { cartItemSchema } = require('../utils/validators');
 
 router.post('/', optionalAuth, validate(cartItemSchema), withDatabaseMiddleware(cartItemController.createCartItem));
 router.get('/', optionalAuth, withDatabaseMiddleware(cartItemController.getCartItems));
+router.get('/all', optionalAuth, withDatabaseMiddleware(cartItemController.getAllCartItems)); // Admin route
 router.get('/:id', optionalAuth, withDatabaseMiddleware(cartItemController.getCartItemById));
 router.put('/:id', optionalAuth, validate(cartItemSchema), withDatabaseMiddleware(cartItemController.updateCartItem));
 router.delete('/:id', optionalAuth, withDatabaseMiddleware(cartItemController.deleteCartItem));
+router.delete('/clear/all', optionalAuth, withDatabaseMiddleware(cartItemController.clearCart)); // Clear user's cart
 
 module.exports = router;

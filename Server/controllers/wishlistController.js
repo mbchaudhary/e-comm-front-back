@@ -1,42 +1,55 @@
 const logger = require("../config/logger");
 
-exports.createWishlist = async (req, res) => {
-  const { user_id, product_id } = req.body;
+// controllers/wishlistController.js
 
+exports.createWishlist = async (req, res) => {
   try {
-    // Check if product exists
-    const productCheck = await req.db.query('SELECT id FROM products WHERE id = $1', [product_id]);
-    if (productCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Product not found' });
+    const { user_id, product_id } = req.body;
+
+    if (!user_id || !product_id) {
+      return res
+        .status(400)
+        .json({ error: "user_id and product_id are required" });
     }
 
-    // Check if item already exists in wishlist
+    const userCheck = await req.db.query("SELECT id FROM users WHERE id = $1", [
+      user_id,
+    ]);
+    if (userCheck.rows.length === 0)
+      return res.status(404).json({ error: "User not found" });
+
+    const productCheck = await req.db.query(
+      "SELECT id FROM products WHERE id = $1",
+      [product_id]
+    );
+    if (productCheck.rows.length === 0)
+      return res.status(404).json({ error: "Product not found" });
+
     const existingItem = await req.db.query(
-      'SELECT * FROM wishlist WHERE user_id = $1 AND product_id = $2',
+      "SELECT id FROM wishlist WHERE user_id = $1 AND product_id = $2",
       [user_id, product_id]
     );
-
     if (existingItem.rows.length > 0) {
-      return res.status(400).json({ error: 'Item already exists in wishlist' });
+      return res.status(409).json({ error: "Item already in wishlist" });
     }
+
+    const insertRes = await req.db.query(
+      "INSERT INTO wishlist (user_id, product_id) VALUES ($1, $2) RETURNING id",
+      [user_id, product_id]
+    );
 
     const { rows } = await req.db.query(
-      'INSERT INTO wishlist (user_id, product_id) VALUES ($1, $2) RETURNING *',
-      [user_id, product_id]
-    );
-
-    const wishlistItem = await req.db.query(
-      `SELECT w.*, p.name, p.price, p.images 
-       FROM wishlist w 
-       JOIN products p ON w.product_id = p.id 
+      `SELECT w.id, w.user_id, w.product_id, p.name, p.price, p.images, p.description
+       FROM wishlist w
+       JOIN products p ON w.product_id = p.id
        WHERE w.id = $1`,
-      [rows[0].id]
+      [insertRes.rows[0].id]
     );
 
-    res.status(201).json(wishlistItem.rows[0]);
+    res.status(201).json(rows[0]);
   } catch (err) {
-    logger.error(err.message);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Wishlist insert failed:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -51,24 +64,31 @@ exports.getAllWishlists = async (req, res) => {
     res.json(rows);
   } catch (err) {
     logger.error(err.message);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
 exports.getWishlistByUser = async (req, res) => {
-  const { user_id } = req.query;
+  // Get from params instead of query
+  const { id } = req.params;
+
+  const userId = parseInt(id, 10);
+  if (!userId) {
+    return res.status(400).json({ error: "Invalid user id" });
+  }
+
   try {
     const { rows } = await req.db.query(
-      `SELECT w.*, p.name, p.price, p.images 
-       FROM wishlist w 
-       JOIN products p ON w.product_id = p.id 
+      `SELECT w.*, p.name, p.price, p.images, p.description
+       FROM wishlist w
+       JOIN products p ON w.product_id = p.id
        WHERE w.user_id = $1`,
-      [user_id]
+      [userId]
     );
     res.json(rows);
   } catch (err) {
     logger.error(err.message);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -83,12 +103,12 @@ exports.getWishlistById = async (req, res) => {
       [id]
     );
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Wishlist item not found' });
+      return res.status(404).json({ error: "Wishlist item not found" });
     }
     res.json(rows[0]);
   } catch (err) {
     logger.error(err.message);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -99,21 +119,24 @@ exports.updateWishlist = async (req, res) => {
   try {
     // Check if wishlist item exists
     const existingItem = await req.db.query(
-      'SELECT * FROM wishlist WHERE id = $1',
+      "SELECT * FROM wishlist WHERE id = $1",
       [id]
     );
     if (existingItem.rows.length === 0) {
-      return res.status(404).json({ error: 'Wishlist item not found' });
+      return res.status(404).json({ error: "Wishlist item not found" });
     }
 
     // Check if product exists
-    const productCheck = await req.db.query('SELECT id FROM products WHERE id = $1', [product_id]);
+    const productCheck = await req.db.query(
+      "SELECT id FROM products WHERE id = $1",
+      [product_id]
+    );
     if (productCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(404).json({ error: "Product not found" });
     }
 
     const { rows } = await req.db.query(
-      'UPDATE wishlist SET user_id = $1, product_id = $2 WHERE id = $3 RETURNING *',
+      "UPDATE wishlist SET user_id = $1, product_id = $2 WHERE id = $3 RETURNING *",
       [user_id, product_id, id]
     );
 
@@ -128,7 +151,7 @@ exports.updateWishlist = async (req, res) => {
     res.json(updatedItem.rows[0]);
   } catch (err) {
     logger.error(err.message);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -137,15 +160,15 @@ exports.deleteWishlist = async (req, res) => {
 
   try {
     const { rows } = await req.db.query(
-      'DELETE FROM wishlist WHERE id = $1 RETURNING *',
+      "DELETE FROM wishlist WHERE id = $1 RETURNING *",
       [id]
     );
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Wishlist item not found' });
+      return res.status(404).json({ error: "Wishlist item not found" });
     }
-    res.json({ message: 'Wishlist item deleted successfully' });
+    res.json({ message: "Wishlist item deleted successfully" });
   } catch (err) {
     logger.error(err.message);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 };

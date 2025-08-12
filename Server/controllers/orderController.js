@@ -213,21 +213,38 @@ exports.getOrdersByUser = async (req, res) => {
 
   try {
     let query = `
-      SELECT o.*, 
-            COUNT(*) OVER() as total_count
+      SELECT 
+        o.id AS order_id,
+        o.user_id,
+        o.order_status,
+        o.ordered_at,
+        o.order_total,
+        COUNT(*) OVER(PARTITION BY o.id) as total_count,
+
+        oi.id AS item_id,
+        oi.product_id,
+        oi.quantity,
+        oi.price,
+
+        p.name AS product_name,
+        p.description AS product_description,
+        p.images AS product_images
       FROM orders o
+      JOIN order_items oi ON o.id = oi.order_id
+      JOIN products p ON p.id = oi.product_id
       WHERE o.user_id = $1
     `;
 
     const values = [requestedUserId];
     if (status) {
-      query += " AND o.order_status = $2";
+      query += ` AND o.order_status = $2`;
       values.push(status);
     }
 
-    query += ` ORDER BY o.ordered_at DESC LIMIT $${values.length + 1} OFFSET $${
-      values.length + 2
-    }`;
+    query += ` 
+      ORDER BY o.ordered_at DESC
+      LIMIT $${values.length + 1} OFFSET $${values.length + 2}
+    `;
     values.push(limit, offset);
 
     const { rows } = await req.db.query(query, values);
@@ -235,17 +252,36 @@ exports.getOrdersByUser = async (req, res) => {
     const total = rows.length > 0 ? parseInt(rows[0].total_count) : 0;
     const totalPages = Math.ceil(total / limit);
 
-    // Fetch order items for each order
-    const ordersWithItems = await Promise.all(
-      rows.map(async (order) => {
-        const { total_count, ...orderData } = order;
-        const items = await getOrderItems(order.id, req.db);
-        return { ...orderData, items };
-      })
-    );
+    // Group data back into order → items → product
+    const ordersMap = {};
+    rows.forEach((row) => {
+      if (!ordersMap[row.order_id]) {
+        ordersMap[row.order_id] = {
+          id: row.order_id,
+          user_id: row.user_id,
+          order_status: row.order_status,
+          ordered_at: row.ordered_at,
+          order_total: row.order_total,
+          items: [],
+        };
+      }
+
+      ordersMap[row.order_id].items.push({
+        id: row.item_id,
+        product_id: row.product_id,
+        quantity: row.quantity,
+        price: row.price,
+        product: {
+          id: row.product_id,
+          name: row.product_name,
+          description: row.product_description,
+          images: row.product_images,
+        },
+      });
+    });
 
     res.json({
-      orders: ordersWithItems,
+      orders: Object.values(ordersMap),
       pagination: {
         total,
         totalPages,
@@ -300,7 +336,6 @@ exports.updateOrder = async (req, res) => {
     }
 
     if (value.shipping_address) {
-
       const jsonShippingAddress = JSON.stringify(value.shipping_address);
 
       updates.push(`shipping_address = $${valueCount++}`);

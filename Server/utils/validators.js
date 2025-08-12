@@ -19,7 +19,7 @@ const updateUserSchema = Joi.object({
   full_name: Joi.string().optional(),
   email: Joi.string().email().optional(),
   password: Joi.string().min(6).optional(),
-  role: Joi.string().valid("user", "admin").default("user"),
+  role: Joi.string().valid("user", "admin").optional(),
   address: Joi.string().optional(),
   phone_number: Joi.string().optional(),
 });
@@ -44,9 +44,9 @@ const categorySchema = Joi.object({
 const productCreateSchema = Joi.object({
   name: Joi.string().min(1).max(100).required(),
   brand: Joi.string().min(1).max(50).required(),
-  description: Joi.string().allow("").optional(), // optional string, can be empty
+  description: Joi.string().allow("").optional(),
   price: Joi.number().positive().required(),
-  discount: Joi.number().min(0).max(100).optional(), // assuming discount is percentage or amount
+  discount: Joi.number().min(0).max(100).optional(),
   specifications: Joi.object({
     storage: Joi.string().optional(),
     controller_type: Joi.string().optional(),
@@ -56,8 +56,6 @@ const productCreateSchema = Joi.object({
   stock_quantity: Joi.number().integer().min(0).required(),
   ratings: Joi.number().min(0).max(5).optional(),
   reviews_count: Joi.number().integer().min(0).optional(),
-  created_at: Joi.date().iso().optional(),
-  updated_at: Joi.date().iso().optional(),
 });
 
 const productUpdateSchema = productCreateSchema.fork(
@@ -66,7 +64,6 @@ const productUpdateSchema = productCreateSchema.fork(
 );
 
 // Order Item
-
 const orderItemSchema = Joi.object({
   product_id: Joi.number().integer().required(),
   quantity: Joi.number().integer().min(1).required(),
@@ -74,7 +71,6 @@ const orderItemSchema = Joi.object({
 });
 
 // Order
-
 const createOrderSchema = Joi.object({
   order_total: Joi.number().positive().required(),
   payment_method: Joi.string().required(),
@@ -93,7 +89,6 @@ const updateOrderSchema = Joi.object({
   payment_method: Joi.string().optional(),
 }).min(1);
 
-
 // Review
 const reviewSchema = Joi.object({
   product_id: Joi.number().integer().required(),
@@ -103,24 +98,26 @@ const reviewSchema = Joi.object({
 
 // Cart
 const cartSchema = Joi.object({
-  user_id: Joi.number().integer().optional(),
+  user_id: Joi.number().integer().required(),
 });
 
-// Cart Item
+// Cart Item - Updated to make cart_id optional for auto-creation
 const cartItemSchema = Joi.object({
+  cart_id: Joi.number().integer().optional(), // Optional for auto-creation
   product_id: Joi.number().integer().required(),
   quantity: Joi.number().integer().min(1).required(),
 });
 
 // Wishlist
 const wishlistSchema = Joi.object({
+  user_id: Joi.number().integer().required(),
   product_id: Joi.number().integer().required(),
 });
 
 // Payment
 const paymentSchema = Joi.object({
   order_id: Joi.number().integer().required(),
-  payment_method: Joi.number().positive().required(),
+  payment_method: Joi.string().required(),
   payment_status: Joi.string().required(),
   transaction_id: Joi.string().required(),
   amount: Joi.number().positive().required(),
@@ -135,7 +132,6 @@ module.exports = {
   categorySchema,
   productCreateSchema,
   productUpdateSchema,
-  //   orderSchema,
   createOrderSchema,
   updateOrderSchema,
   orderItemSchema,
