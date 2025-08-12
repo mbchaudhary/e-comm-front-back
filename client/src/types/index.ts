@@ -12,11 +12,11 @@ export interface User {
 export interface Product {
   id: number;
   name: string;
-  description?: string;
   price: number;
+  images?: string;
+  description?: string;
   category_id: number;
   stock_quantity: number;
-  images?: string;
   specifications?: string;
   created_at: string;
   updated_at?: string;
@@ -72,6 +72,17 @@ export interface Cart {
   items?: CartItem[];
 }
 
+export interface Wishlist {
+  id: number;
+  user_id: number;
+  product_id: number;
+
+  
+  name: string;
+  price: number;
+  images: string;
+  description: string;
+}
 
 export interface Order {
   id: number;
@@ -80,6 +91,7 @@ export interface Order {
   payment_method: string;
   order_status: string;
   shipping_address?: string;
+  
   ordered_at: string;
   updated_at?: string;
   items?: OrderItem[];
@@ -105,14 +117,6 @@ export interface Review {
   user_name?: string;
 }
 
-export interface Wishlist {
-  id: number;
-  user_id: number;
-  product_id: number;
-  created_at: string;
-  product?: Product;
-}
-
 export interface Payment {
   id: number;
   order_id: number;
@@ -126,6 +130,7 @@ export interface AuthResponse {
   message: string;
   user: User;
   token: string;
+  user_id: number;
 }
 
 export interface ApiResponse<T> {

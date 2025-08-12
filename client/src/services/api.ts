@@ -6,8 +6,6 @@ import {
   Cart,
   CartItem,
   Order,
-  // OrderItem,
-  // Review,
   Wishlist,
   Payment,
   AuthResponse,
@@ -25,16 +23,22 @@ class ApiService {
       headers: {
         "Content-Type": "application/json",
       },
+      timeout: 10000, // 10 seconds timeout
     });
 
     // Add request interceptor to include auth token
-    this.api.interceptors.request.use((config) => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+    this.api.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem("token");
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
       }
-      return config;
-    });
+    );
 
     // Add response interceptor for error handling
     this.api.interceptors.response.use(
@@ -45,207 +49,336 @@ class ApiService {
           localStorage.removeItem("user");
           window.location.href = "/login";
         }
-        return Promise.reject(error);
+
+        // Handle network errors
+        if (error.code === "NETWORK_ERROR" || !error.response) {
+          throw new Error("Network error. Please check your connection.");
+        }
+
+        // Handle API errors
+        const message =
+          error.response?.data?.error ||
+          error.response?.data?.message ||
+          "An error occurred";
+        throw new Error(message);
       }
     );
   }
 
   // Auth endpoints
   async login(email: string, password: string): Promise<AuthResponse> {
-    const response: AxiosResponse<AuthResponse> = await this.api.post(
-      "/auth/login",
-      {
-        email,
-        password,
-      }
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<AuthResponse> = await this.api.post(
+        "/auth/login",
+        {
+          email,
+          password,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async register(
     userData: Partial<User> & { password: string }
   ): Promise<AuthResponse> {
-    const response: AxiosResponse<AuthResponse> = await this.api.post(
-      "/auth/register",
-      userData
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<AuthResponse> = await this.api.post(
+        "/auth/register",
+        userData
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   // User endpoints
   async getUsers(): Promise<User[]> {
-    const response: AxiosResponse<User[]> = await this.api.get("/users");
-    return response.data;
+    try {
+      const response: AxiosResponse<User[]> = await this.api.get("/users");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getUserProfile(userId: number): Promise<User> {
-    const response: AxiosResponse<User> = await this.api.get(
-      `/users/${userId}`
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<User> = await this.api.get(
+        `/users/${userId}`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async updateUserProfile(
     userId: number,
     userData: Partial<User>
   ): Promise<User> {
-    const response: AxiosResponse<User> = await this.api.put(
-      `/users/${userId}`,
-      userData
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<User> = await this.api.put(
+        `/users/${userId}`,
+        userData
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   // Product endpoints
   async getProducts(): Promise<Product[]> {
-    const response: AxiosResponse<Product[]> = await this.api.get("/products");
-    return response.data;
+    try {
+      const response: AxiosResponse<Product[]> = await this.api.get(
+        "/products"
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getProductById(id: number): Promise<Product> {
-    const response: AxiosResponse<Product> = await this.api.get(
-      `/products/${id}`
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<Product> = await this.api.get(
+        `/products/${id}`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async createProduct(productData: Partial<Product>): Promise<Product> {
-    const response: AxiosResponse<Product> = await this.api.post(
-      "/products",
-      productData
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<Product> = await this.api.post(
+        "/products",
+        productData
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async updateProduct(
     id: number,
     productData: Partial<Product>
   ): Promise<Product> {
-    const response: AxiosResponse<Product> = await this.api.put(
-      `/products/${id}`,
-      productData
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<Product> = await this.api.put(
+        `/products/${id}`,
+        productData
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async deleteProduct(id: number): Promise<void> {
-    await this.api.delete(`/products/${id}`);
+    try {
+      await this.api.delete(`/products/${id}`);
+    } catch (error) {
+      throw error;
+    }
   }
 
   // Category endpoints
   async getCategories(): Promise<Category[]> {
-    const response: AxiosResponse<Category[]> = await this.api.get(
-      "/categories"
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<Category[]> = await this.api.get(
+        "/categories"
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getCategoryById(id: number): Promise<Category> {
-    const response: AxiosResponse<Category> = await this.api.get(
-      `/categories/${id}`
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<Category> = await this.api.get(
+        `/categories/${id}`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   // Cart endpoints
   async getCart(): Promise<Cart> {
-    const response: AxiosResponse<Cart> = await this.api.get("/cart");
-    return response.data;
+    try {
+      const response: AxiosResponse<Cart> = await this.api.get("/cart");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getCartItems(): Promise<CartItem[]> {
-    const response: AxiosResponse<CartItem[]> = await this.api.get(
-      "/cart-items"
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<CartItem[]> = await this.api.get(
+        "/cart-items"
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async addToCart(cartItemData: Partial<CartItem>): Promise<CartItem> {
-    const response: AxiosResponse<CartItem> = await this.api.post(
-      "/cart-items",
-      cartItemData
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<CartItem> = await this.api.post(
+        "/cart-items",
+        cartItemData
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async updateCartItem(id: number, quantity: number): Promise<CartItem> {
-    const response: AxiosResponse<CartItem> = await this.api.put(
-      `/cart-items/${id}`,
-      { quantity }
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<CartItem> = await this.api.put(
+        `/cart-items/${id}`,
+        { quantity }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async removeFromCart(id: number): Promise<void> {
-    await this.api.delete(`/cart-items/${id}`);
+    try {
+      await this.api.delete(`/cart-items/${id}`);
+    } catch (error) {
+      throw error;
+    }
   }
 
+  // Fix the clearCart endpoint to match backend
   async clearCart(): Promise<void> {
-    await this.api.delete("/cart/clear");
+    try {
+      await this.api.delete("/cart-items/clear/all");
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getCartItemById(id: number): Promise<CartItem> {
-    const response: AxiosResponse<CartItem> = await this.api.get(
-      `/cart-items/${id}`
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<CartItem> = await this.api.get(
+        `/cart-items/${id}`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   // Order endpoints
   async getOrders(): Promise<Order[]> {
-    const response: AxiosResponse<Order[]> = await this.api.get("/orders");
-    return response.data;
+    try {
+      const response: AxiosResponse<Order[]> = await this.api.get("/orders");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getOrdersByUser(userId : number): Promise<Order[]> {
+    try {
+      const response: AxiosResponse<Order[]> = await this.api.get(
+        `/orders/user/${userId}`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getOrderById(id: number): Promise<Order> {
-    const response: AxiosResponse<Order> = await this.api.get(`/orders/${id}`);
-    return response.data;
+    try {
+      const response: AxiosResponse<Order> = await this.api.get(
+        `/orders/${id}`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async createOrder(orderData: Partial<Order>): Promise<Order> {
-    const response: AxiosResponse<Order> = await this.api.post(
-      "/orders",
-      orderData
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<Order> = await this.api.post(
+        "/orders",
+        orderData
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
-
-  // Review endpoints
-  // async getReviewsByProduct(productId: number): Promise<Review[]> {
-  //   const response: AxiosResponse<Review[]> = await this.api.get(`/reviews/product/${productId}`);
-  //   return response.data;
-  // }
-
-  // async addReview(reviewData: Partial<Review>): Promise<Review> {
-  //   const response: AxiosResponse<Review> = await this.api.post('/reviews', reviewData);
-  //   return response.data;
-  // }
 
   // Wishlist endpoints
   async getWishlist(): Promise<Wishlist[]> {
-    const response: AxiosResponse<Wishlist[]> = await this.api.get("/wishlist");
-    return response.data;
+    try {
+      const response: AxiosResponse<Wishlist[]> = await this.api.get(
+        "/wishlist"
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async addToWishlist(wishlistData: Partial<Wishlist>): Promise<Wishlist> {
-    const response: AxiosResponse<Wishlist> = await this.api.post(
-      "/wishlist",
-      wishlistData
+    try {
+      const response: AxiosResponse<Wishlist> = await this.api.post(
+        "/wishlist",
+        wishlistData
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getWishlistByUser(userId: number): Promise<Wishlist[]> {
+    const response: AxiosResponse<Wishlist[]> = await this.api.get(
+      `/wishlist/user/${userId}`,
     );
     return response.data;
   }
 
   async removeFromWishlist(id: number): Promise<void> {
-    await this.api.delete(`/wishlist/${id}`);
+    try {
+      await this.api.delete(`/wishlist/${id}`);
+    } catch (error) {
+      throw error;
+    }
   }
 
   // Payment endpoints
   async createPayment(paymentData: Partial<Payment>): Promise<Payment> {
-    const response: AxiosResponse<Payment> = await this.api.post(
-      "/payments",
-      paymentData
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<Payment> = await this.api.post(
+        "/payments",
+        paymentData
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 }
 
